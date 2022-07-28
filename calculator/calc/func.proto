@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+option go_package = "./;calc";
+
+// API contract for SUM: Unary RR 
+message SumRequest{
+    int32 a = 1;
+    int32 b = 2;
+}
+
+message SumResponse{
+    int32 sum = 1;
+}
+
+
+// API contract for PN: Server-Side Streaming
+message PrimeRequest{
+    int32 n = 1;
+}
+
+message PrimeResponse{
+    int32 number = 1;
+}
+
+
+// API contract for Average: Client-Side Streaming
+message AvgRequest{
+    int32 num = 1;
+}
+
+message AvgResponse{
+    int32 result = 1;
+}
+
+// API contract for FMN: BIDI Streaming
+message FMNRequest{
+    int32 num = 1;
+}
+
+message FMNResponse{
+    int32 newMax = 1;
+}
+
+// Defining the service with the defined API
+service CalculatorService{
+
+    // SUM API : Unary Operation
+    rpc ComputeSum(SumRequest) returns (SumResponse) {};
+
+    // Prime API : Server-Side Streaming
+    rpc ComputePrime(PrimeRequest) returns (stream PrimeResponse) {};
+
+    // Average API : Client-Side Streaming
+    rpc ComputeAvg(stream AvgRequest) returns (AvgResponse) {};
+
+    // FMN API : BIDI Streaming
+    rpc ComputeFMN(stream FMNRequest) returns (stream FMNResponse) {};
+} 
+
