@@ -83,6 +83,7 @@ func (*server) ComputeAvg(req calc.CalculatorService_ComputeAvgServer) error {
 	// Recieve the stream of data from the client
 	var finalSum int32 = 0
 	var finalCount int32 = 0
+
 	for {
 		reqPacket, err := req.Recv()
 		if err == io.EOF{
@@ -105,6 +106,42 @@ func (*server) ComputeAvg(req calc.CalculatorService_ComputeAvgServer) error {
 	err := req.SendAndClose(avgResult)
 	if err != nil{
 		log.Fatal("error while sending data and closing connection", err)
+	}
+
+	return nil
+}
+
+// 4. FMN [BiDi Stream]
+func ComputeFMN(req calc.CalculatorService_ComputeFMNClient) error {
+
+	fmt.Println("This functio was invoked to process the FMN API")
+
+	var maxi int32 = -1
+	// Recieve the requests from the client
+	for {
+		reqPack, err := req.Recv()
+		if err == io.EOF{
+			break
+		}
+
+		if err != nil{
+			log.Fatal("error while getting requests from client : ", err)
+		}
+
+		// Update the maxi according to the request
+		if maxi < reqPack.GetNewMax() {
+			maxi = reqPack.NewMax
+
+			// Whenever there is an updata, send the update back to client
+			newResp := &calc.FMNRequest{
+				Num: maxi,
+			}
+
+			err := req.Send(newResp)
+			if err != nil {
+				log.Fatal("error while sending newMax to client", err)
+			}
+		}
 	}
 
 	return nil

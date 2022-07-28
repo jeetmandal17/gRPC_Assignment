@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/gRPC/calc/calc"
@@ -31,7 +32,10 @@ func main(){
 	//ComputePrime(cli)
 
 	// Request sent to ComputAvg API (Client-side Stream)
-	ComputeAvg(cli)
+	// ComputeAvg(cli)
+
+	// Request sent to ComputeFMN (BiDi Stream)
+	ComputeFMN(cli)
 }
 
 // 1. Sum API
@@ -127,4 +131,86 @@ func ComputeAvg(cli calc.CalculatorServiceClient){
 
 	fmt.Println("The average is : ", resp.Result)
 
+}
+
+// 4. FindMaxNumber API
+func ComputeFMN(cli calc.CalculatorServiceClient) {
+
+	fmt.Println("Starting FMN API")
+
+	streams, err := cli.ComputeFMN(context.Background())
+	if err != nil{
+		log.Fatal("Error in establishing streams", err)
+	}
+
+	// Form the request packets
+	reqPacks := []*calc.FMNRequest{
+		{
+			Num: 1,
+		},
+		{
+			Num: 3,
+		},
+		{
+			Num: 7, 
+		},
+		{
+			Num: 9,
+		},
+		{
+			Num: 2,
+		},
+		{
+			Num: 5,
+		},
+		{
+			Num: 22, 
+		},
+		{
+			Num: 15,
+		},
+		{
+			Num: 21,
+		},
+		{
+			Num: 19,
+		},
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// We will send the data and update the maxi
+	go func(){
+		// Send the values to the server
+		for _, item := range reqPacks{
+			err := streams.Send(item)
+			if err != nil {
+				log.Fatal("error in sending item to server", err)
+			}
+			time.Sleep(2*time.Second)
+		}
+		wg.Done()
+	}()
+
+		
+	// Listen for and updates from the server
+	go func ()  {
+		for {
+			respPack, err := streams.Recv()
+
+			if err == io.EOF{
+				break
+			}
+
+			if err != nil{
+				log.Fatal("error in receiving updates from server ", err)
+			}
+
+			fmt.Println("The newMax value is : ", respPack.NewMax)
+		}
+		wg.Done()
+	}()	
+
+	wg.Wait()	
 }
