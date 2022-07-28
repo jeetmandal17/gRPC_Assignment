@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"time"
@@ -10,8 +11,6 @@ import (
 	"github.com/gRPC/calc/calc"
 	"google.golang.org/grpc"
 )
-
-
 
 type server struct{
 	calc.UnimplementedCalculatorServiceServer
@@ -38,7 +37,7 @@ func (*server) ComputeSum(ctx context.Context,req *calc.SumRequest) (*calc.SumRe
 
 // 2. Prime API [Serve-Side Stream]
 func (*server) ComputePrime(req *calc.PrimeRequest, resp calc.CalculatorService_ComputePrimeServer) error{
-	fmt.Println("This func was invoked to process the Prime API")
+	fmt.Println("This function was invoked to process the Prime API")
 
 	// Extract the value of n from request
 	n := req.GetN()
@@ -46,7 +45,7 @@ func (*server) ComputePrime(req *calc.PrimeRequest, resp calc.CalculatorService_
 	// Check for all number less than n
 	var i int32
 	for i=2; i<n; i++{
-		if isPrime(i) == true {
+		if isPrime(i) {
 			result := &calc.PrimeResponse{
 				Number: i,
 			}
@@ -74,6 +73,41 @@ func isPrime(val int32) bool{
 	}
 
 	return true
+}
+
+// 3. AvgCompute [Client-side Stream]
+func (*server) ComputeAvg(req calc.CalculatorService_ComputeAvgServer) error {
+
+	fmt.Println("This function was invoked to process the ComputeAvg API")
+
+	// Recieve the stream of data from the client
+	var finalSum int32 = 0
+	var finalCount int32 = 0
+	for {
+		reqPacket, err := req.Recv()
+		if err == io.EOF{
+			break
+		}
+
+		if err != nil{
+			log.Fatal("Error while fetching requests from client", err)
+		}
+
+		finalCount++
+		finalSum += reqPacket.GetNum()
+	}
+	
+	// compute the average
+	avgResult := &calc.AvgResponse{
+		Result: (finalSum/finalCount),
+	}
+	// Send the response and close the channel
+	err := req.SendAndClose(avgResult)
+	if err != nil{
+		log.Fatal("error while sending data and closing connection", err)
+	}
+
+	return nil
 }
 
 func main(){
