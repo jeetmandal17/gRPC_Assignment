@@ -112,12 +112,13 @@ func (*server) ComputeAvg(req calc.CalculatorService_ComputeAvgServer) error {
 }
 
 // 4. FMN [BiDi Stream]
-func ComputeFMN(req calc.CalculatorService_ComputeFMNClient) error {
+func (*server)ComputeFMN(req calc.CalculatorService_ComputeFMNServer) error {
 
-	fmt.Println("This functio was invoked to process the FMN API")
+	fmt.Println("This function was invoked to process the FMN API")
 
 	var maxi int32 = -1
 	// Recieve the requests from the client
+		
 	for {
 		reqPack, err := req.Recv()
 		if err == io.EOF{
@@ -127,23 +128,23 @@ func ComputeFMN(req calc.CalculatorService_ComputeFMNClient) error {
 		if err != nil{
 			log.Fatal("error while getting requests from client : ", err)
 		}
-
+	
 		// Update the maxi according to the request
-		if maxi < reqPack.GetNewMax() {
-			maxi = reqPack.NewMax
+		fmt.Println("Received the new Value : ", reqPack.GetNum())
+		if maxi < reqPack.GetNum() {
+			maxi = reqPack.GetNum()
 
-			// Whenever there is an updata, send the update back to client
-			newResp := &calc.FMNRequest{
-				Num: maxi,
+			// Whenever there is an update, send the update back to client
+			newResp := &calc.FMNResponse{
+				NewMax: maxi,
 			}
-
-			err := req.Send(newResp)
+		
+			err = req.Send(newResp)
 			if err != nil {
 				log.Fatal("error while sending newMax to client", err)
 			}
 		}
 	}
-
 	return nil
 }
 

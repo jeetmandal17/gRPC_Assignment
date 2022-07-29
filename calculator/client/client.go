@@ -177,11 +177,12 @@ func ComputeFMN(cli calc.CalculatorServiceClient) {
 		},
 	}
 
+	// Creating waitgroups for the go routines
 	var wg sync.WaitGroup
 	wg.Add(2)
 
 	// We will send the data and update the maxi
-	go func(){
+	go func(wg *sync.WaitGroup){
 		// Send the values to the server
 		for _, item := range reqPacks{
 			err := streams.Send(item)
@@ -191,26 +192,27 @@ func ComputeFMN(cli calc.CalculatorServiceClient) {
 			time.Sleep(2*time.Second)
 		}
 		wg.Done()
-	}()
+	}(&wg)
 
 		
 	// Listen for and updates from the server
-	go func ()  {
+	go func (wg *sync.WaitGroup)  {
 		for {
 			respPack, err := streams.Recv()
-
+	
 			if err == io.EOF{
+				fmt.Println("END !!! ")
 				break
 			}
-
+	
 			if err != nil{
 				log.Fatal("error in receiving updates from server ", err)
 			}
-
+	
 			fmt.Println("The newMax value is : ", respPack.NewMax)
 		}
 		wg.Done()
-	}()	
-
-	wg.Wait()	
+	}(&wg)
+	
+	wg.Wait()
 }
