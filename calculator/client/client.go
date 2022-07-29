@@ -191,6 +191,9 @@ func ComputeFMN(cli calc.CalculatorServiceClient) {
 			}
 			time.Sleep(2*time.Second)
 		}
+
+		// Requiered to stop the send stream
+		streams.CloseSend()
 		wg.Done()
 	}(&wg)
 
@@ -201,7 +204,6 @@ func ComputeFMN(cli calc.CalculatorServiceClient) {
 			respPack, err := streams.Recv()
 	
 			if err == io.EOF{
-				fmt.Println("END !!! ")
 				break
 			}
 	

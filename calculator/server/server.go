@@ -145,6 +145,7 @@ func (*server)ComputeFMN(req calc.CalculatorService_ComputeFMNServer) error {
 			}
 		}
 	}
+
 	return nil
 }
 
